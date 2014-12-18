@@ -1,0 +1,149 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:sec="http://www.springframework.org/schema/security"
+	xmlns:p="http://www.springframework.org/schema/p"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/security http://www.springframework.org/schema/security/spring-security-3.2.xsd">
+
+	<bean id="appLoginConfigurer"
+		class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer"
+		p:fileEncoding="utf-8" p:ignoreResourceNotFound="true"
+		p:ignoreUnresolvablePlaceholders="true">
+		<property name="locations">
+			<list>
+				<value>classpath:config/securityContext.properties
+				</value>
+				<value>classpath:login.properties</value>
+			</list>
+		</property>
+	</bean>
+	<sec:http disable-url-rewriting="true" use-expressions="true"
+		realm="${login.realm}">
+		<sec:headers>
+			<sec:xss-protection />
+			<!-- <sec:frame-options /> -->
+		</sec:headers>
+		<sec:expression-handler ref="expressionHandle" />
+		<sec:intercept-url pattern="/**" access="permitAll" />
+		<sec:form-login login-page="${login.loginPage}"
+			login-processing-url="${login.processUrl}"
+			authentication-success-handler-ref="defaultAuthenticationSuccessHandle"
+			authentication-failure-handler-ref="defaultAuthenticationFailureHandle"
+			username-parameter="${login.username}" password-parameter="${login.password}" />
+		<sec:logout logout-url="${logout.processUrl}"
+			success-handler-ref="defaultLogoutSuccessHandle" delete-cookies="${logout.deleteCookies}" />
+		<sec:port-mappings>
+			<sec:port-mapping http="${login.httpPort}" https="${login.httpsPort}" />
+		</sec:port-mappings>
+		<sec:custom-filter ref="captchaFilter" position="FIRST" />
+	</sec:http>
+
+	<sec:authentication-manager>
+		<sec:authentication-provider
+			user-service-ref="defaultJdbcUserService">
+			<sec:password-encoder ref="${login.passwordEncoder}" />
+		</sec:authentication-provider>
+	</sec:authentication-manager>
+
+	<bean id="defaultJdbcUserService"
+		class="org.boreas.common.login.userdetail.ExtendJdbcDaoImpl"
+		p:dataSource-ref="${login.dataSource}" p:rolePrefix="${login.rolePrefix}"
+		p:usersByUsernameQuery="${login.usersQuery}"
+		p:authoritiesByUsernameQuery="${login.authoritiesQuery}"
+		p:userClassName="${login.userClass}" />
+
+	<!-- Password Encoder -->
+	<bean id="defaultMd5Encoder"
+		class="org.boreas.common.login.encoder.Md5WithSaltEncoder"
+		p:salt="${login.passwordSalt}" />
+	<!-- Password Encoder -->
+
+	<!-- Success/failure Handle -->
+	<bean id="defaultAuthenticationSuccessHandle"
+		class="org.boreas.common.login.authentication.SimpleAuthenticationSuccessHandle"
+		p:defaultTargetUrl="${login.defaultTargetUrl}" />
+	<bean id="defaultAuthenticationFailureHandle"
+		class="org.boreas.common.login.authentication.SimpleAuthenticationFailureHandle"
+		p:loginPageUrl="${login.loginPage}" />
+	<!-- Success/failure Handle -->
+
+	<!-- Logout Handle -->
+	<bean id="defaultLogoutSuccessHandle"
+		class="org.boreas.common.login.authentication.SimpleLogoutSuccessHandle"
+		p:defaultTargetUrl="${logout.successUrl}" />
+	<!-- Logout Handle -->
+
+	<!-- message -->
+	<bean id="messageSource"
+		class="org.springframework.context.support.ReloadableResourceBundleMessageSource">
+		<property name="basename" value="${login.message}" />
+	</bean>
+	<bean id="localeResolver"
+		class="org.springframework.web.servlet.i18n.AcceptHeaderLocaleResolver" />
+	<!-- message -->
+
+	<!-- Filter helpers -->
+	<bean id="urlInterruptionHelper"
+		class="org.boreas.common.login.authentication.UrlInterruptionHelper"
+		destroy-method="destroy">
+		<constructor-arg index="0" ref="springSecurityFilterChain" />
+		<constructor-arg index="1" ref="${login.urlMap}" />
+		<constructor-arg index="2" ref="expressionHandle" />
+	</bean>
+	<bean id="defaultUrlMap" class="java.util.HashMap">
+		<constructor-arg>
+			<map>
+				<entry key="/**" value="permitAll" />
+			</map>
+		</constructor-arg>
+	</bean>
+	<bean id="captchaFilterHelper"
+		class="org.boreas.common.login.captcha.CaptchaFilterHelper"
+		destroy-method="destroy">
+		<constructor-arg index="0" ref="springSecurityFilterChain" />
+		<constructor-arg index="1" value="${login.captcha.on}" />
+	</bean>
+	<!-- Filter helpers -->
+
+	<!-- Role Hierarchy -->
+	<bean id="expressionHandle"
+		class="org.springframework.security.web.access.expression.DefaultWebSecurityExpressionHandler"
+		p:roleHierarchy-ref="roleHierarchy" />
+	<bean id="roleHierarchy"
+		class="org.springframework.security.access.hierarchicalroles.RoleHierarchyImpl"
+		p:hierarchy="${login.roleHierarchy}" />
+	<!-- Role Hierarchy -->
+
+	<!-- Captcha -->
+	<bean id="defaultCaptchaContext"
+		class="org.boreas.common.login.captcha.CaptchaContext"
+		p:captchaGenerator-ref="${login.captcha.generator}" />
+	<bean id="defaultCaptchaGenerator"
+		class="org.boreas.common.login.captcha.generator.DefaultCaptchaGenerator">
+		<constructor-arg index="0"
+			ref="${login.captcha.imageGenerator}" />
+		<constructor-arg index="1"
+			ref="${login.captcha.codeGenerator}" />
+	</bean>
+	<bean id="defaultImageGenerator"
+		class="org.boreas.common.login.captcha.generator.SimpleImageGenerator">
+		<constructor-arg index="0" value="${login.captcha.width}" />
+		<constructor-arg index="1" value="${login.captcha.height}" />
+	</bean>
+	<bean id="defaultCodeGenerator"
+		class="org.boreas.common.login.captcha.generator.SimpleCodeGenerator"
+		p:codeLength="${login.captcha.codeLength}" />
+	<bean id="captchaFilter"
+		class="org.boreas.common.login.captcha.CaptchaFilter"
+		p:captchaContext-ref="defaultCaptchaContext"
+		p:avaliableParameters-ref="${login.captcha.keys}" />
+	<bean id="defaultCaptchaKeys" class="java.util.ArrayList">
+		<constructor-arg>
+			<list>
+				<value>login</value>
+			</list>
+		</constructor-arg>
+	</bean>
+	<!-- Captcha -->
+
+</beans>
