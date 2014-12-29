@@ -14,7 +14,7 @@ public class SimpleCodeGenerator implements CodeGenerator {
 
 	private int codeLength = 4;
 
-	private static final String CHARACTERS = "abcdefghjkmnprstuvwxyABCDEFGHJKLMNPRSTVUWXY2345678";
+	private static final String CHARACTERS = "abcdefhjkmnprstuvwxyABCDEFGHJKLMNPRSTVUWXY2345678";
 
 	@Override
 	public String generateCode() {
