@@ -7,16 +7,14 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
+import org.boreas.common.login.Attributes;
+import org.boreas.common.login.userdetail.ExtendUser;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.web.authentication.AbstractAuthenticationTargetUrlRequestHandler;
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler;
 import org.springframework.security.web.savedrequest.HttpSessionRequestCache;
 import org.springframework.security.web.savedrequest.RequestCache;
 import org.springframework.security.web.savedrequest.SavedRequest;
-import org.springframework.util.StringUtils;
-
-import org.boreas.common.login.Attributes;
-import org.boreas.common.login.userdetail.ExtendUser;
 
 /**
  * Extension of {@link SimpleUrlAuthenticationSuccessHandler}, provide several
@@ -60,9 +58,7 @@ public class SimpleAuthenticationSuccessHandle extends
 			throws IOException, ServletException {
 		clearAuthenticationAttrs(request);
 		saveUser(request, authentication);
-		boolean isAjax = !StringUtils.isEmpty(request
-				.getParameter(Attributes.AJAX_HANDLE_KEY));
-		if (isAjax)
+		if (request.getHeader(Attributes.AJAX_HEADER) == null)
 			writeJsonResult(response);
 		else
 			handle(request, response, authentication);

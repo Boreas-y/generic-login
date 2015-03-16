@@ -42,7 +42,7 @@ public class SimpleAuthenticationFailureHandle extends
 				.getUsername();
 		String errorMessage = exception.getMessage();
 		int errorCount = updateErrorCount(request.getSession());
-		if (request.getParameter(Attributes.AJAX_HANDLE_KEY) != null) {
+		if (request.getHeader(Attributes.AJAX_HEADER) == null) {
 			String msg = Attributes.getLoginJsonResult(-1, errorCount,
 					errorMessage);
 			response.setContentType(Attributes.JSON_CONTENT_TYPE);

@@ -11,7 +11,7 @@ public final class Attributes {
 
 	public static final String SESSION_LOGIN_USERNAME = "loginUsername";
 
-	public static final String AJAX_HANDLE_KEY = "ajax";
+	public static final String AJAX_HEADER = "x-requested-with";
 
 	public static final String LOGIN_USER = "user";
 
